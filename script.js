@@ -26,24 +26,21 @@ window.onclick = (e) => {
 };
 
 // Get all todos
-function getTodos() {
+async function getTodos() {
   showLoader();
-  axios
-    .get(API_URL)
-    .then((response) => {
-      displayTodos(response.data);
-    })
-    .catch((err) => {
-      showError("Failed to load todos");
-      console.error(err);
-    })
-    .finally(() => {
-      hideLoader();
-    });
+  try {
+    const response = await axios.get(API_URL);
+    displayTodos(response.data);
+  } catch (err) {
+    showError("Failed to load todos");
+    console.error(err);
+  } finally {
+    hideLoader();
+  }
 }
 
 // Add a new todo
-function addTodo() {
+async function addTodo() {
   const text = todoInput.value.trim();
   if (!text) return;
 
@@ -54,34 +51,29 @@ function addTodo() {
   };
 
   showLoader();
-  axios
-    .post(API_URL, newTodo)
-    .then((response) => {
-      addTodoToList(response.data);
-      todoInput.value = "";
-      showSuccess("Task added successfully!");
-    })
-    .catch((err) => {
-      showError("Failed to add todo");
-      console.error(err);
-    })
-    .finally(() => {
-      hideLoader();
-    });
+  try {
+    const response = await axios.post(API_URL, newTodo);
+    addTodoToList(response.data);
+    todoInput.value = "";
+    showSuccess("Task added successfully!");
+  } catch (err) {
+    showError("Failed to add todo");
+    console.error(err);
+  } finally {
+    hideLoader();
+  }
 }
 
 // Toggle todo status
-function toggleStatus(id, completed) {
-  axios
-    .put(`${API_URL}/${id}`, { completed })
-    .then((response) => {
-      updateTodoItem(response.data);
-      showSuccess(completed ? "Task completed!" : "Task marked as active");
-    })
-    .catch((err) => {
-      showError("Failed to update todo status");
-      console.error(err);
-    });
+async function toggleStatus(id, completed) {
+  try {
+    const response = await axios.put(`${API_URL}/${id}`, { completed });
+    updateTodoItem(response.data);
+    showSuccess(completed ? "Task completed!" : "Task marked as active");
+  } catch (err) {
+    showError("Failed to update todo status");
+    console.error(err);
+  }
 }
 
 // Open edit modal
@@ -93,33 +85,32 @@ function openEdit(id, title) {
 }
 
 // Save edited todo
-function saveEdit() {
+async function saveEdit() {
   if (!currentTodoId) return;
 
   const text = editInput.value.trim();
   if (!text) return;
 
   showLoader();
-  axios
-    .put(`${API_URL}/${currentTodoId}`, { title: text })
-    .then((response) => {
-      updateTodoItem(response.data);
-      editModal.style.display = "none";
-      showSuccess("Task updated successfully!");
-    })
-    .catch((err) => {
-      showError("Failed to update todo");
-      console.error(err);
-    })
-    .finally(() => {
-      hideLoader();
-      currentTodoId = null;
+  try {
+    const response = await axios.put(`${API_URL}/${currentTodoId}`, {
+      title: text,
     });
+    updateTodoItem(response.data);
+    editModal.style.display = "none";
+    showSuccess("Task updated successfully!");
+  } catch (err) {
+    showError("Failed to update todo");
+    console.error(err);
+  } finally {
+    hideLoader();
+    currentTodoId = null;
+  }
 }
 
 // Delete a todo
-function deleteTodo(id) {
-  Swal.fire({
+async function deleteTodo(id) {
+  const result = await Swal.fire({
     title: "Are you sure?",
     text: "You won't be able to recover this task!",
     icon: "warning",
@@ -127,27 +118,25 @@ function deleteTodo(id) {
     confirmButtonColor: "#3085d6",
     cancelButtonColor: "#d33",
     confirmButtonText: "Yes, delete it!",
-  }).then((result) => {
-    if (result.isConfirmed) {
-      axios
-        .delete(`${API_URL}/${id}`)
-        .then(() => {
-          const item = document.querySelector(`[data-id="${id}"]`);
-          if (item) item.remove();
-
-          // Show empty state if no todos left
-          if (todoList.children.length === 0) {
-            showEmptyState();
-          }
-
-          Swal.fire("Deleted!", "Your task has been deleted.", "success");
-        })
-        .catch((err) => {
-          showError("Failed to delete todo");
-          console.error(err);
-        });
-    }
   });
+
+  if (result.isConfirmed) {
+    try {
+      await axios.delete(`${API_URL}/${id}`);
+      const item = document.querySelector(`[data-id="${id}"]`);
+      if (item) item.remove();
+
+      // Show empty state if no todos left
+      if (todoList.children.length === 0) {
+        showEmptyState();
+      }
+
+      await Swal.fire("Deleted!", "Your task has been deleted.", "success");
+    } catch (err) {
+      showError("Failed to delete todo");
+      console.error(err);
+    }
+  }
 }
 
 // Display all todos
